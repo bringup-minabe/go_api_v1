@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/labstack/echo"
 	"github.com/satori/go.uuid"
+	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"runtime"
 	"strconv"
@@ -13,7 +14,9 @@ type User struct {
 	Id        uint      `json:"id"`
 	Uuid      string    `json:"uuid"`
 	Username  string    `json:"username"`
+	Password  string    `json:-`
 	Created   time.Time `json:"created"`
+	Modified  time.Time `json:"modified"`
 	LastName  string    `json:"last_name"`
 	FirstName string    `json:"first_name"`
 }
@@ -127,17 +130,21 @@ func AddUser() echo.HandlerFunc {
 
 		user := User{}
 
-		user.Username = c.FormValue("name")
+		user.Username = c.FormValue("username")
 		user.LastName = c.FormValue("last_name")
 		user.FirstName = c.FormValue("first_name")
 		user.Created = time.Now()
+		user.Modified = time.Now()
 		user.Uuid = uuid.NewV4().String()
+
+		//パスワード
+		password := c.FormValue("password")
+		hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		user.Password = string(hash)
 
 		// Db.NewRecord(user)
 		Db.Create(&user)
 
-		jsonMap := map[string]string{}
-
-		return c.JSON(http.StatusOK, jsonMap)
+		return c.JSON(http.StatusOK, user)
 	}
 }
