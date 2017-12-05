@@ -45,6 +45,7 @@ func main() {
 	e.GET(api_path+"/users/", GetUsers())
 	e.GET(api_path+"/users/:id", GetUser())
 	e.POST(api_path+"/users/", AddUser())
+	e.PUT(api_path+"/users/:id", EditUser())
 
 	/**
 	 * start

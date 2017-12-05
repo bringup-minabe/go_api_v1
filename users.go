@@ -136,3 +136,35 @@ func AddUser() echo.HandlerFunc {
 		return c.JSON(http.StatusOK, user)
 	}
 }
+
+/**
+ * EditUser
+ */
+func EditUser() echo.HandlerFunc {
+	return func(c echo.Context) error {
+
+		var Db, _ = DbConnect()
+
+		id, _ := strconv.Atoi(c.Param("id"))
+
+		user := User{}
+		if err := Db.Where("id = ?", id).First(&user).Error; err != nil {
+			return echo.NewHTTPError(http.StatusNotFound)
+		}
+
+		user.Username = c.FormValue("username")
+		user.LastName = c.FormValue("last_name")
+		user.FirstName = c.FormValue("first_name")
+
+		//パスワード
+		password := c.FormValue("password")
+		if password != "" {
+			hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+			user.Password = string(hash)
+		}
+
+		Db.Save(&user)
+
+		return c.JSON(http.StatusOK, user)
+	}
+}
