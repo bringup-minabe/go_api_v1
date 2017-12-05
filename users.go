@@ -11,14 +11,15 @@ import (
 )
 
 type User struct {
-	Id        uint      `json:"id"`
-	Uuid      string    `json:"uuid"`
-	Username  string    `json:"username"`
-	Password  string    `json:-`
-	Created   time.Time `json:"created"`
-	Modified  time.Time `json:"modified"`
-	LastName  string    `json:"last_name"`
-	FirstName string    `json:"first_name"`
+	ID        uint       `gorm:"primary_key" json:"id"`
+	Uuid      string     `json:"uuid"`
+	Username  string     `json:"username"`
+	Password  string     `json:"-"`
+	LastName  string     `json:"last_name"`
+	FirstName string     `json:"first_name"`
+	CreatedAt time.Time  `gorm:"column:created_at" json:"created_at"`
+	UpdatedAt time.Time  `gorm:"column:updated_at" json:"updated_at"`
+	DeletedAt *time.Time `gorm:"column:deleted_at" json:"deleted_at"`
 }
 
 type Res struct {
@@ -44,11 +45,6 @@ func GetUsers() echo.HandlerFunc {
 		 * 並列処理で通常検索とカウント用検索をおこなう
 		 */
 
-		// set Where
-		where := map[string]interface{}{
-			"is_deleted": 0,
-		}
-
 		// CPU数取得
 		cpus := runtime.NumCPU()
 
@@ -57,7 +53,6 @@ func GetUsers() echo.HandlerFunc {
 		go func() {
 			var users []User
 			Db.
-				Where(where).
 				Limit(paginate.Limit).
 				Offset(paginate.Offset).
 				Order("id desc").
@@ -71,7 +66,6 @@ func GetUsers() echo.HandlerFunc {
 			count := 0
 			Db.
 				Model(User{}).
-				Where(where).
 				Count(&count)
 			uc <- count
 		}()
@@ -107,15 +101,11 @@ func GetUser() echo.HandlerFunc {
 		/**
 		 * Select
 		 */
-		var user []User
+		user := User{}
 		if err := Db.Where("id = ?", id).First(&user).Error; err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError)
+			return echo.NewHTTPError(http.StatusNotFound)
 		} else {
-			if len(user) == 0 {
-				return echo.NewHTTPError(http.StatusNotFound)
-			} else {
-				return c.JSON(http.StatusOK, user)
-			}
+			return c.JSON(http.StatusOK, user)
 		}
 	}
 }
@@ -133,8 +123,6 @@ func AddUser() echo.HandlerFunc {
 		user.Username = c.FormValue("username")
 		user.LastName = c.FormValue("last_name")
 		user.FirstName = c.FormValue("first_name")
-		user.Created = time.Now()
-		user.Modified = time.Now()
 		user.Uuid = uuid.NewV4().String()
 
 		//パスワード
