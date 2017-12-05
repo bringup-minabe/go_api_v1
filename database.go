@@ -15,7 +15,17 @@ func DbConnect() (*gorm.DB, error) {
 		log.Fatal("Error loading .env file")
 	}
 
-	var db, db_err = gorm.Open("mysql", os.Getenv("APP_DB_USER")+":"+os.Getenv("APP_DB_PASS")+"@"+os.Getenv("APP_DB_LOCATION")+"/"+os.Getenv("APP_DB_DATABASE")+"?loc=Local")
+	db_driver := os.Getenv("APP_DB_DRIVER")
+	if db_driver == "" {
+		db_driver = "mysql"
+	}
+	db_user := os.Getenv("APP_DB_USER")
+	db_pass := os.Getenv("APP_DB_PASS")
+	db_location := os.Getenv("APP_DB_LOCATION")
+	db_database := os.Getenv("APP_DB_DATABASE")
+	db_config := db_user + ":" + db_pass + "@" + db_location + "/" + db_database + "?loc=Local&parseTime=true&charset=utf8"
+
+	var db, db_err = gorm.Open(db_driver, db_config)
 
 	if db_err != nil {
 		log.Fatal("Error Database Access")
