@@ -1,5 +1,7 @@
 # Go Api Ver1
 
+Use Echo and Gorm
+
 ## Database
 
 Mysql
