@@ -33,7 +33,7 @@ type Res struct {
 func GetUsers() echo.HandlerFunc {
 	return func(c echo.Context) error {
 
-		var Db, _ = DbConnect()
+		var db, _ = DbConnect()
 
 		var paginate Paginate
 
@@ -52,7 +52,7 @@ func GetUsers() echo.HandlerFunc {
 		uf := make(chan []User, cpus)
 		go func() {
 			var users []User
-			Db.
+			db.
 				Limit(paginate.Limit).
 				Offset(paginate.Offset).
 				Order("id desc").
@@ -64,7 +64,7 @@ func GetUsers() echo.HandlerFunc {
 		uc := make(chan int, cpus)
 		go func() {
 			count := 0
-			Db.
+			db.
 				Model(User{}).
 				Count(&count)
 			uc <- count
@@ -94,7 +94,7 @@ func GetUsers() echo.HandlerFunc {
 func GetUser() echo.HandlerFunc {
 	return func(c echo.Context) error {
 
-		var Db, _ = DbConnect()
+		var db, _ = DbConnect()
 
 		id, _ := strconv.Atoi(c.Param("id"))
 
@@ -102,7 +102,7 @@ func GetUser() echo.HandlerFunc {
 		 * Select
 		 */
 		user := User{}
-		if err := Db.Where("id = ?", id).First(&user).Error; err != nil {
+		if err := db.Where("id = ?", id).First(&user).Error; err != nil {
 			return echo.NewHTTPError(http.StatusNotFound)
 		} else {
 			return c.JSON(http.StatusOK, user)
@@ -116,7 +116,7 @@ func GetUser() echo.HandlerFunc {
 func AddUser() echo.HandlerFunc {
 	return func(c echo.Context) error {
 
-		var Db, _ = DbConnect()
+		var db, _ = DbConnect()
 
 		user := User{}
 
@@ -130,8 +130,8 @@ func AddUser() echo.HandlerFunc {
 		hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		user.Password = string(hash)
 
-		// Db.NewRecord(user)
-		Db.Create(&user)
+		// db.NewRecord(user)
+		db.Create(&user)
 
 		return c.JSON(http.StatusOK, user)
 	}
@@ -143,12 +143,12 @@ func AddUser() echo.HandlerFunc {
 func EditUser() echo.HandlerFunc {
 	return func(c echo.Context) error {
 
-		var Db, _ = DbConnect()
+		var db, _ = DbConnect()
 
 		id, _ := strconv.Atoi(c.Param("id"))
 
 		user := User{}
-		if err := Db.Where("id = ?", id).First(&user).Error; err != nil {
+		if err := db.Where("id = ?", id).First(&user).Error; err != nil {
 			return echo.NewHTTPError(http.StatusNotFound)
 		}
 
@@ -163,7 +163,28 @@ func EditUser() echo.HandlerFunc {
 			user.Password = string(hash)
 		}
 
-		Db.Save(&user)
+		db.Save(&user)
+
+		return c.JSON(http.StatusOK, user)
+	}
+}
+
+/**
+ * DeleteUser
+ */
+func DeleteUser() echo.HandlerFunc {
+	return func(c echo.Context) error {
+
+		var db, _ = DbConnect()
+
+		id, _ := strconv.Atoi(c.Param("id"))
+
+		user := User{}
+		if err := db.Where("id = ?", id).First(&user).Error; err != nil {
+			return echo.NewHTTPError(http.StatusNotFound)
+		}
+
+		db.Delete(&user)
 
 		return c.JSON(http.StatusOK, user)
 	}
