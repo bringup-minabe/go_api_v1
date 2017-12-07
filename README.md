@@ -22,6 +22,18 @@ Mysql
       KEY `idx_user_uuid` (`uuid`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+### user_profiles
+
+    CREATE TABLE `user_profiles` (
+      `id` bigint(20) NOT NULL AUTO_INCREMENT,
+      `user_id` bigint(20) NOT NULL,
+      `last_name` varchar(255) DEFAULT NULL,
+      `first_name` varchar(255) DEFAULT NULL,
+      `created_at` datetime DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      KEY `idx_profiles_user_id` (`user_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 ## Setting
 
 ### .env

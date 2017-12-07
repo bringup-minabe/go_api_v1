@@ -1,25 +1,21 @@
 package main
 
 import (
+	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo"
 	"github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"runtime"
 	"strconv"
-	"time"
 )
 
 type User struct {
-	ID        uint       `gorm:"primary_key" json:"id"`
-	Uuid      string     `json:"uuid"`
-	Username  string     `json:"username"`
-	Password  string     `json:"-"`
-	LastName  string     `json:"last_name"`
-	FirstName string     `json:"first_name"`
-	CreatedAt time.Time  `gorm:"column:created_at" json:"created_at"`
-	UpdatedAt time.Time  `gorm:"column:updated_at" json:"updated_at"`
-	DeletedAt *time.Time `gorm:"column:deleted_at" json:"deleted_at"`
+	gorm.Model
+	Uuid        string `json:"uuid"`
+	Username    string `json:"username"`
+	Password    string `json:"-"`
+	UserProfile UserProfile
 }
 
 type Res struct {
@@ -57,6 +53,12 @@ func GetUsers() echo.HandlerFunc {
 				Offset(paginate.Offset).
 				Order("id desc").
 				Find(&users)
+
+			// Related
+			for i := range users {
+				db.Model(users[i]).Related(&users[i].UserProfile)
+			}
+
 			uf <- users
 		}()
 
@@ -121,14 +123,19 @@ func AddUser() echo.HandlerFunc {
 		user := User{}
 
 		user.Username = c.FormValue("username")
-		user.LastName = c.FormValue("last_name")
-		user.FirstName = c.FormValue("first_name")
 		user.Uuid = uuid.NewV4().String()
 
 		//パスワード
 		password := c.FormValue("password")
 		hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		user.Password = string(hash)
+
+		// add user profile
+		user_profile := UserProfile{
+			LastName:  c.FormValue("last_name"),
+			FirstName: c.FormValue("first_name"),
+		}
+		user.UserProfile = user_profile
 
 		// db.NewRecord(user)
 		db.Create(&user)
@@ -153,8 +160,6 @@ func EditUser() echo.HandlerFunc {
 		}
 
 		user.Username = c.FormValue("username")
-		user.LastName = c.FormValue("last_name")
-		user.FirstName = c.FormValue("first_name")
 
 		//パスワード
 		password := c.FormValue("password")
@@ -162,6 +167,13 @@ func EditUser() echo.HandlerFunc {
 			hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 			user.Password = string(hash)
 		}
+
+		// edit user profile
+		user_profile := UserProfile{
+			LastName:  c.FormValue("last_name"),
+			FirstName: c.FormValue("first_name"),
+		}
+		user.UserProfile = user_profile
 
 		db.Save(&user)
 
